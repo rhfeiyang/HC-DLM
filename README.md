@@ -22,15 +22,6 @@
 </p>
 <p align="center"><sub>One reverse trajectory on a sentence. Scripted illustration of the sampler, not model output. Interactive version on the <a href="https://hc-dlm.github.io/">project page</a>.</sub></p>
 
-> [!NOTE]
-> This repository hosts the project description for now. Code and artifacts are being prepared for release. **Watch** or **star** the repo to be notified.
-
-<p align="center">
-  <a href="#-idea">Idea</a> ·
-  <a href="#-results">Results</a> ·
-  <a href="#-release">Release</a> ·
-  <a href="#-citation">Citation</a>
-</p>
 
 ## 💡 Idea
 
