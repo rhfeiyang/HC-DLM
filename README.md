@@ -20,7 +20,7 @@
 <p align="center">
   <a href="https://hc-dlm.github.io/"><img src="assets/demo.gif" alt="One HC-DLM reverse trajectory on a sentence: the continuous latent is denoised step by step; at every step the whole sentence is read out of it, re-noised, and fed back as the scaffold for the next latent update, so early words can still be revised." width="860"></a>
 </p>
-<p align="center"><sub>One reverse trajectory on a sentence. Scripted illustration of the sampler, not model output. Interactive version on the <a href="https://hc-dlm.github.io/">project page</a>.</sub></p>
+<p align="center"><sub>One reverse trajectory on a sentence. Interactive version on the <a href="https://hc-dlm.github.io/">project page</a>.</sub></p>
 
 
 ## 💡 Idea
