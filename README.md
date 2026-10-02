@@ -3,6 +3,7 @@
 <p align="center">
   <a href="https://hc-dlm.github.io/"><img alt="Project page" src="https://img.shields.io/badge/%F0%9F%8C%90%20Project-Page-1f4a8a"></a>
   <a href="https://arxiv.org/abs/2610.02193"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2610.02193-b31b1b"></a>
+  <a href="https://huggingface.co/papers/2610.02193"><img alt="Hugging Face Paper" src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Paper-ffd21e"></a>
   <img alt="Artifacts" src="https://img.shields.io/badge/Artifacts-coming%20soon-d1553c">
 </p>
 
