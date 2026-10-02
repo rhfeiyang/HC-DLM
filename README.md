@@ -6,6 +6,8 @@
   <img alt="Artifacts" src="https://img.shields.io/badge/Artifacts-coming%20soon-d1553c">
 </p>
 
+<p align="center"><b>Augmenting Continuous Diffusion Language Models with Discrete Token Guidance</b></p>
+
 <p align="center">
   <a href="https://rhfeiyang.top/">Hui Ren</a><sup>1</sup>,
   <a href="https://www.linkedin.com/in/zihan-li-616b68325/">Zihan Li</a><sup>1</sup>,
@@ -15,61 +17,57 @@
   <sup>1</sup>University of Illinois Urbana-Champaign &nbsp;&nbsp; <sup>2</sup>Amazon.com, Inc.
 </p>
 
-<p align="center"><i><b>HC-DLM</b> is a diffusion language model whose only persistent state is a continuous latent:<br>tokens are read out of it at every step and fed back as the scaffold for the next.</i></p>
+<p align="center"><i><b>HC-DLM</b> augments continuous diffusion language models with discrete token guidance:<br>a shared latent plans every token jointly, while tokens read out at each step keep it anchored to valid text.</i></p>
 
 <p align="center">
-  <a href="https://hc-dlm.github.io/"><img src="assets/demo.gif" alt="One HC-DLM reverse trajectory on a sentence: the continuous latent is denoised step by step; at every step the whole sentence is read out of it, re-noised, and fed back as the scaffold for the next latent update, so early words can still be revised." width="860"></a>
+  <a href="https://hc-dlm.github.io/"><img src="assets/demo.gif" alt="One simulated HC-DLM reverse trajectory on a sentence: the continuous latent is denoised step by step; at every step a token draft is read out of it and fed back to guide the next latent update, so early words can still be revised." width="860"></a>
 </p>
-<p align="center"><sub>One reverse trajectory on a sentence. Interactive version on the <a href="https://hc-dlm.github.io/">project page</a>.</sub></p>
+<p align="center"><sub>The latent plans, the tokens guide, at every step (simulated example). Interactive version on the <a href="https://hc-dlm.github.io/">project page</a>.</sub></p>
 
 
 ## 💡 Idea
 
-Both families of diffusion language models leave something on the table:
+Each family of diffusion language models has a blind spot:
 
-- **Discrete diffusion** decodes in parallel, but samples every token from its own marginal.
-- **Continuous diffusion** denoises one shared state, but nothing ties that state to a valid token sequence until the end.
+- **Discrete diffusion** decodes tokens in parallel, but samples each one **independently** from its marginal.
+- **Continuous diffusion** plans all tokens in one shared latent, but **never checks that plan against real tokens** until the very end.
 
-HC-DLM makes the reverse process a **hierarchy**. The continuous latent is the only state that persists across steps; the tokens are read out of it at every step and fed back as the scaffold for the next latent update.
+HC-DLM keeps both strengths: tokens are planned jointly in the latent, and the latent is guided by tokens at every step. The continuous latent is the only persistent generative state; at every step the model reads a token draft $k_t$ out of the latent $x_t$, and that draft guides the next latent update.
 
 $$
-p_{\theta,\phi}(k_{0:T},x_{0:T})=p(x_T)\,p_\theta(k_0\mid x_0)\prod_{t=1}^{T}\underbrace{p_\theta(k_t\mid x_t)}_{\text{read out}}\;\underbrace{p_\phi(x_{t-1}\mid x_t,k_t)}_{\text{feed back}}
+p_{\theta,\phi}(k_{0:T},x_{0:T})=p(x_T)\,p_\theta(k_0\mid x_0)\prod_{t=1}^{T}\underbrace{p_\theta(k_t\mid x_t)}_{\text{read out tokens}}\;\underbrace{p_\phi(x_{t-1}\mid x_t,k_t)}_{\text{token-guided latent denoising}}
 $$
 
-Each reverse step does three things:
+<p align="center">
+  <img src="assets/comparison.png" alt="Four reverse-step diagrams. (a) Discrete diffusion: tokens k_t go to k_{t-1} through a learned predictor, with no latent. (b) Continuous diffusion: the latent x_t goes to x_{t-1}; tokens are decoded only at t = 0. (c) Hybrid diffusion: a discrete chain and a continuous chain run side by side and condition each other. (d) HC-DLM: tokens are read out of x_t and condition the latent update p_phi(x_{t-1} | x_t, k_t)." width="860">
+</p>
+<p align="center"><sub><b>One reverse step, four designs.</b> Discrete diffusion updates tokens directly, one marginal at a time. Continuous diffusion denoises a latent that is blind to tokens and decodes only at the end. Hybrid models attach a continuous signal to a self-contained discrete chain. In HC-DLM the two levels talk at every step: tokens are read out of the latent, then guide its next update.</sub></p>
 
-<table>
-  <tr>
-    <th align="center" width="33%">① Denoise</th>
-    <th align="center" width="33%">② Read out</th>
-    <th align="center" width="33%">③ Re-noise</th>
-  </tr>
-  <tr>
-    <td align="center">Conditioned on the current token scaffold, the denoiser estimates the clean latent and advances the latent one step.</td>
-    <td align="center">The token predictor decodes the whole sequence from that estimate, so parallel tokens share one cause.</td>
-    <td align="center">The known forward kernel corrupts the read-out tokens to the next level; nothing is ever frozen.</td>
-  </tr>
-</table>
+|                                 | Discrete diffusion<br><sub>e.g. MDM, LLaDA</sub> | Continuous diffusion<br><sub>e.g. Diffusion-LM, Plaid</sub> | Hybrid discrete–continuous<br><sub>e.g. CADD, CCDD</sub> | **HC-DLM (ours)** |
+|---------------------------------|:---:|:---:|:---:|:---:|
+| Token dependence within a step  | ✕<br><sub>independent marginals</sub> | ✓ | ◐<br><sub>via conditioning only</sub> | ✓ |
+| Tied to tokens at every step    | ✓ | ✕<br><sub>only at <i>t</i> = 0</sub> | ✓ | ✓ |
+| Tokens revisable at every step  | ◐<br><sub>uniform kernel only</sub> | ✓ | ◐<br><sub>uniform kernel only</sub> | ✓<br><sub>readout from <i>x<sub>t</sub></i></sub> |
 
-The tokens have no transition chain of their own, which separates HC-DLM from hybrid models that attach a continuous signal to a self-contained discrete chain. A single variational bound on the token likelihood trains the encoder, the denoiser and the token predictor together.
+Noise corrupts tokens and latent independently, so training stays simple. A single variational bound on the token likelihood splits into three terms and trains everything end to end: reconstruction for the token readout, token-guided flow matching for the latent denoiser, and an entropy term that keeps the encoder from collapsing.
 
 <p align="center">
   <img src="assets/training.webp" alt="Training pipeline: an encoder maps clean tokens to a latent, independent forward kernels produce the noisy pair, the token-conditioned denoiser predicts the clean latent, and the token predictor decodes the latent back to tokens." width="680">
 </p>
-<p align="center"><sub>Training: an encoder maps clean tokens to a latent, independent forward kernels produce the noisy pair, the token-conditioned denoiser predicts the clean latent, and the token predictor decodes it back to tokens.</sub></p>
+<p align="center"><sub><b>One principled objective, trained end to end.</b> An encoder maps clean tokens to a latent, independent forward kernels produce the noisy pair, the token-conditioned denoiser predicts the clean latent, and the token predictor decodes it back to tokens.</sub></p>
 
 ## 📊 Results
 
-Structured reasoning (Sudoku), mathematical planning (Countdown) and language modeling (LM1B), against discrete, continuous and hybrid diffusion baselines at matched model size.
+From Sudoku and Countdown to open-domain text, HC-DLM leads discrete, continuous and hybrid diffusion baselines of the same size on Hard Sudoku, Countdown and LM1B. Parameter counts exclude token embeddings.
 
 <p align="center">
   <img src="assets/results.webp" alt="Hard Sudoku accuracy 72.41% at 6M parameters, 1.68 over CCDD and 22.53 over masked diffusion; Countdown CD5 accuracy 37.52% at 6M, 12.17 over CCDD; LM1B generative perplexity 75.5, 1.8 lower than Plaid and 16.7 lower than LangFlow." width="860">
 </p>
 
 <p align="center">
-  <img src="assets/analysis.webp" alt="Two line charts. Left: Sudoku accuracy of the decoded intermediate prediction along the trajectory rises earlier and higher for HC-DLM than for a latent diffusion model without the token scaffold. Right: Hard Sudoku accuracy against the number of denoising steps stays high for HC-DLM while MDM degrades as steps are reduced." width="760">
+  <img src="assets/analysis.webp" alt="Two line charts. Left: Sudoku accuracy of the decoded intermediate prediction along the trajectory rises earlier and higher for HC-DLM than for a latent diffusion model without token guidance. Right: Hard Sudoku accuracy against the number of denoising steps stays high for HC-DLM while MDM degrades as steps are reduced." width="760">
 </p>
-<p align="center"><sub><b>Left:</b> the scaffold locks in structure early: accuracy of the intermediate prediction along the trajectory, vs. latent diffusion without it. <b>Right:</b> robust to fewer steps: Hard Sudoku accuracy vs. number of denoising steps, vs. MDM.</sub></p>
+<p align="center"><sub><b>Left:</b> solutions emerge early: accuracy of the intermediate prediction decoded at each step, vs. latent diffusion without token guidance. <b>Right:</b> holds up with fewer steps: Hard Sudoku accuracy against step count; MDM degrades sharply as steps shrink.</sub></p>
 
 <details>
 <summary><b>📋 Full tables</b> (accuracy %; generative perplexity, lower is better)</summary>
@@ -93,13 +91,13 @@ Structured reasoning (Sudoku), mathematical planning (Countdown) and language mo
 | Plaid      |   109M |       77.3 |
 | **HC-DLM** |   118M |   **75.5** |
 
-**Ablation:** removing either level falls well short of the full model (Hard Sudoku accuracy %).
+**Ablation:** neither level works alone. Latent DM removes token guidance from the denoiser; MDM removes the latent altogether (Sudoku accuracy %).
 
-| Variant                                 | Hard Sudoku |
-|-----------------------------------------|------------:|
-| Continuous only (no token scaffold)     |       24.74 |
-| Discrete only (purely discrete chain)   |       49.88 |
-| **HC-DLM** (both levels)                |   **72.41** |
+| Method                          | Cont. latent | Token guidance |      Easy |      Hard |
+|---------------------------------|:------------:|:--------------:|----------:|----------:|
+| MDM (top-prob. margin)          |      ✕       |       ✕        |     89.49 |     49.88 |
+| Latent DM (w/o token guidance)  |      ✓       |       ✕        |     50.46 |     24.74 |
+| **HC-DLM**                      |      ✓       |       ✓        | **94.21** | **72.41** |
 
 </details>
 
