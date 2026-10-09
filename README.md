@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://rhfeiyang.top/">Hui Ren</a><sup>1</sup>,
-  <a href="https://www.linkedin.com/in/zihan-li-616b68325/">Zihan Li</a><sup>1</sup>,
+  <a href="https://prime-ppzi.github.io/">Zihan Li</a><sup>1</sup>,
   <a href="https://ruachang.github.io/">Chang Liu</a><sup>1</sup>,
   <a href="https://harryliew.github.io/">Huidong Liu</a><sup>2</sup>,
   <a href="https://www.alexander-schwing.de/">Alexander Schwing</a><sup>1</sup><br>
